@@ -1,0 +1,5 @@
+Tool	Location
+cutadapt	/home/wagnerj/.local/bin/cutadapt
+bowtie  bowtie
+samtools  samtools
+bedtools bedtools

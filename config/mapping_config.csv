@@ -1,0 +1,7 @@
+parameter_name,parameter_value,comment
+cutadapt_3prime_adapter,CTGTAGGCACCATCAATAGATCGGAAGAGCACACGTCTGAACTCCAGTCA,adapter
+cutadapt_5prime_adapter,,usually not necesary for Illumina sequencing
+cutadapt_quality_trimming,20,remove bases with PHRED score or lower
+cutadapt_min_read_length,20,minimal read length to keep in bases
+bowtie_m,1,report only unique hits (reads that map best to only one position)
+bowtie_v,2,number of mismatches

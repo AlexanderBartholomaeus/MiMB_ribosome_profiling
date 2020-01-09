@@ -78,8 +78,6 @@ cat('DONE \n')
 ### plot counts in frame
 cat('Normalizing counts and generating plots ... ')
 for_res <- foreach(i = 1:length(in_files)) %dopar% {
-#for(i in 2:length(in_files)) {
-  #print(i)
   # read counts
   counts <- read.table(
     paste0(

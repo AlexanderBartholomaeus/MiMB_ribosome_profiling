@@ -32,7 +32,7 @@ if(!dir.exists(in_path)){
 # check if bam files
 in_files <- list.files(
   path = in_path, 
-  pattern = '.sort.bam',
+  pattern = '.bam',
   ignore.case = TRUE
 )
 if(length(in_files) < 1){
@@ -69,21 +69,21 @@ for_res <- foreach(i = 1:length(in_files)) %dopar% {
       ' -s ', # strand specific
       ' -a ',in_bed,
       ' -b ',in_path,in_files[i],
-      ' > ',out_path,'calibration/counts/bedtools_',gsub('.sort.bam','',basename(in_files[i])),'.txt'
+      ' > ',out_path,'calibration/counts/bedtools_',gsub('.bam','',basename(in_files[i])),'.txt'
     )
   )
 }
 cat('DONE \n')
 
 ### plot counts in frame
-cat('Determine count ... ')
-
-if(1==1){
+cat('Normalizing counts and generating plots ... ')
 for_res <- foreach(i = 1:length(in_files)) %dopar% {
+#for(i in 2:length(in_files)) {
+  #print(i)
   # read counts
   counts <- read.table(
     paste0(
-      out_path,'calibration/counts/bedtools_',gsub('.sort.bam','',basename(in_files[i])),'.txt'
+      out_path,'calibration/counts/bedtools_',gsub('.bam','',basename(in_files[i])),'.txt'
     ),
     header = F,
     stringsAsFactors = F,
@@ -104,6 +104,11 @@ for_res <- foreach(i = 1:length(in_files)) %dopar% {
       dir,
       cds_length = 150,
       normalize = F)
+    # check which are not dividable by 3
+    # if((length(cou)-100)%%3 != 0){
+    #   #system(paste0('cat ',u_genes[j],'\n not dividable by 3.'))
+    #   print(paste0(u_genes[j],' not dividable by 3.'))
+    # }
     # frame counts
     frame_cou <- frame_counts(
       cou,
@@ -130,17 +135,17 @@ for_res <- foreach(i = 1:length(in_files)) %dopar% {
   c_frame_mat <- round(matrix(unlist(c_list_frame), nrow = length(c_list_frame), ncol = 3, byrow = T),digits=5)
   c_frame_sum <- round(apply(c_frame_mat, 2, sum, na.rm=T),digits=5)
   
-  # write tables
+  # write count tables
   write.table(
     c_mat, 
-    paste0(out_path,'calibration/counts/all_genes_',gsub('.sort.bam','',basename(in_files[i])),'.csv'),
+    paste0(out_path,'calibration/counts/all_genes_',gsub('.bam','',basename(in_files[i])),'.csv'),
     col.names = T,
     row.names = T,
     sep = ','
   )
   write.table(
     data.frame(position=c(-50:-1,1:150,-150:-1,1:50),counts=c_mat_mean),
-    paste0(out_path,'calibration/counts/plot_',gsub('.sort.bam','',basename(in_files[i])),'.csv'),
+    paste0(out_path,'calibration/counts/plot_',gsub('.bam','',basename(in_files[i])),'.csv'),
     col.names = T,
     row.names = F,
     sep = ',',
@@ -150,26 +155,42 @@ for_res <- foreach(i = 1:length(in_files)) %dopar% {
   pdf(
     width = 7,
     height = 5,
-    paste0(out_path,'calibration/calibration_',gsub('.sort.bam','',basename(in_files[i])),'.pdf')
+    paste0(out_path,'calibration/calibration_',gsub('.bam','',basename(in_files[i])),'.pdf')
   )
-  # plot frame
+  # plot count for frames
+  par(mar=c(5.1,5.1,4.1,2.1))
   barplot(
     c_frame_sum,
     names.arg = c(0,1,2),
     col = c('darkgreen','orange','navyblue'),
     las = 1,
     xlab = 'Frame',
-    ylab = 'Counts',
-    main = gsub('.sort.bam','',basename(in_files[i]))
-  )
+    cex.axis = 1.2,
+    cex.names = 1.2,
+    cex.lab = 1.2,
+    main = gsub('.sort.bam','',basename(in_files[i])),
+    ylab = '')
+  title(ylab = 'Counts', line = 4, cex.lab = 1.2)
+  
   # plot around the start and stop codon region
-  colVec <- c(
-    rep('black',35),
-    rep(c('darkgreen','orange','navyblue'),55),
-    rep('black',50),
-    rep(c('darkgreen','orange','navyblue'),45),
-    rep('black',65)
-  )
+  if(length(grep('firstBase',in_files[i]))==1){
+    colVec <- c(
+      rep('black',35),
+      rep(c('darkgreen','orange','navyblue'),55),
+      rep('black',50),
+      rep(c('darkgreen','orange','navyblue'),45),
+      rep('black',65)
+    )
+  } else {
+    colVec <- c(
+      rep('black',65),
+      rep(c('darkgreen','orange','navyblue'),45),
+      rep('black',50),
+      rep(c('darkgreen','orange','navyblue'),55),
+      rep('black',35)
+    )
+  }
+  par(mar=c(5.1,4.1,4.1,2.1))
   plot(
     c(c_mat_mean[1:200],rep(NA,50),c_mat_mean[201:400]),
     col = colVec,
@@ -186,7 +207,4 @@ for_res <- foreach(i = 1:length(in_files)) %dopar% {
     label = c('-50','START','50','100','150','-150','-100','-50','STOP','+50'))
   dev.off()
 }
-}
 cat('DONE \n')
-
-

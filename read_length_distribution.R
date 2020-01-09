@@ -59,7 +59,11 @@ cat('DONE \n')
 
 ### generate plot 
 cat('Create plot and table of read length distribution ... \n')
-pdf(paste0(out_path,"read_length_distribution/all_read_length.pdf"))
+pdf(
+  paste0(out_path,"read_length_distribution/all_read_length.pdf"),
+  width = 7,
+  height = 5
+)
 length_dist <- data.frame('length' = c(20:50))
 for(i in 1:length(in_files)){
   # read file
@@ -73,15 +77,18 @@ for(i in 1:length(in_files)){
   length_dist <- merge(length_dist, l_dist, by.x = 1, by.y = 2, all.x = T)
   
   # file
-  par(mar=c(5.1,5.1,4.1,2.1))
-  barplot(
+  par(mar=c(5.1,6.1,4.1,2.1))
+  b <- barplot(
     length_dist[,i+1],
-    names.arg = length_dist[,1], 
     las=1, 
     main=in_files[i], 
     xlab = 'Read length [nt]',
-    ylab = '')
-  title(ylab = 'Counts', line = 4)
+    ylab = '',
+    cex.names=1.2, 
+    cex.lab=1.2, 
+    cex.axis = 1.2) 
+  title(ylab = 'Counts', line = 5, cex.lab = 1.2)
+  axis(1, at = b[seq(1,31,by=5)], labels = c(seq(20,50,by=5)), cex.axis = 1.2)
 }
 dev.off()
 colnames(length_dist)[2:ncol(length_dist)] <- in_files

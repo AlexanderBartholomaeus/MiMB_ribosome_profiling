@@ -19,8 +19,9 @@ frame_counts = function(count, dir = '+', utr_length = 50){
         sum(count[seq(3,length(count),by=3)])
       )
     } else {
-      print('Not dividable by 3! No frame count performed!')
-      NULL
+      #print('Not dividable by 3! No frame count performed!')
+      # return 0 counts
+      c(0,0,0)
     }
   }
 }

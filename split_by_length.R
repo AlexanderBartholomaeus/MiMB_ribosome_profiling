@@ -51,12 +51,28 @@ if(!dir.exists(paste0(out_path,'calibration/split_by_length'))){
   dir.create(paste0(out_path,'calibration/split_by_length'))
 }
 
+# check 5' or 3' calibration
+firstLast <- get_dir[3]
+if(firstLast != 'first' && firstLast != 'last' && firstLast != '5prime' && firstLast != '3prime'){
+  # check if read_base is missing and length range was set
+  if(grep("[0-9]{2}-[0-9]{2}",firstLast)==1){
+    get_dir[4] <- get_dir[3]
+  }
+  # default switch to 5' calibration
+  cat('No valid string to process first (5\') or last (3\') nucleotide detected. Please enter "first", "5prime", "last" or "3prime". Switching to first (5\') nucleotide processing.')
+  firstLast <- 'first'
+} else if(firstLast == '5prime'){
+  firstLast <- 'first'
+} else if(firstLast == '3prime'){
+  firstLast <- 'last'
+}
+
 # check length to filter
-len <- get_dir[3]
+len <- get_dir[4]
 if(is.na(len) || is.null(len) || len == '' ){
   len <- c(24,30)
 } else {
-  if(grep('-',len) == 1){
+  if(length(grep('-',len)) == 1){
     len <- unlist(strsplit(len, '-'))
     if(length(len) != 2){
       stop('Error while parsing read length. Please use " - " (minus) as delimiter! For example: 26-28.')
@@ -79,6 +95,13 @@ par_read_length <- rep(len[1]:len[2], length(in_files))
 #par_read_length <- rep('all', length(in_files))
 
 ### split by length and take first nucleotide only
+if(firstLast == 'first'){
+  f_read <- "print $1 \"\t\" $2 \"\t\" $3 \"\t\" $4 \"\t\" $5 \"\t1M\t\" $7 \"\t\" $8 \"\t\" $9 \"\t\" substr($10,1,1) \"\t\" substr($11,1,1); " 
+  r_read <- "print $1 \"\t\" $2 \"\t\" $3 \"\t\" ($4+length($10)-1) \"\t\" $5 \"\t1M\t\" $7 \"\t\" $8 \"\t\" $9 \"\t\" substr($10,length($10),1) \"\t\" substr($11,length($11),1);  "
+} else if(firstLast == 'last') {
+  r_read <- "print $1 \"\t\" $2 \"\t\" $3 \"\t\" $4 \"\t\" $5 \"\t1M\t\" $7 \"\t\" $8 \"\t\" $9 \"\t\" substr($10,1,1) \"\t\" substr($11,1,1); " 
+  f_read <- "print $1 \"\t\" $2 \"\t\" $3 \"\t\" ($4+length($10)-1) \"\t\" $5 \"\t1M\t\" $7 \"\t\" $8 \"\t\" $9 \"\t\" substr($10,length($10),1) \"\t\" substr($11,length($11),1);  "
+}
 cat('Splitting reads by length and modifying ... ')
 for_res <- foreach(i = 1:length(par_files)) %dopar% {
   system(
@@ -90,24 +113,31 @@ for_res <- foreach(i = 1:length(par_files)) %dopar% {
 if($1 ~ /@/)
   print $0;
 else if($2 == 0) 
-  print $1 \"\t\" $2 \"\t\" $3 \"\t\" $4 \"\t\" $5 \"\t1M\t\" $7 \"\t\" $8 \"\t\" $9 \"\t\" substr($10,1,1) \"\t\" substr($11,1,1); 
+  ",f_read,"
 else if($2 == 16) 
-  print $1 \"\t\" $2 \"\t\" $3 \"\t\" ($4+length($10)-1) \"\t\" $5 \"\t1M\t\" $7 \"\t\" $8 \"\t\" $9 \"\t\" substr($10,length($10),1) \"\t\" substr($11,length($11),1);  
+  ",r_read,"
 }'",
      ' | ',tool_path['samtools'],' view -S -b - > ',
-     out_path,'calibration/split_by_length/',gsub(".sort.bam","",par_files[i]),'_',par_read_length[i],'_firstBase.sort.bam'
+     out_path,'calibration/split_by_length/',gsub(".sort.bam","",par_files[i]),'_',par_read_length[i],'_',firstLast,'Base.sort.bam'
     )
   )
 }
 cat('DONE \n')
 
-### create config file for later read calibration
+### create config file for later read calibration (5'prime)
 cali_config <- data.frame(matrix(NA, nrow = (len[2]-len[1]+1), ncol = length(in_files)+1))
 colnames(cali_config) <- c('length',gsub(".sort.bam","",in_files))
 cali_config[,1] <- len[1]:len[2]
 write.table(
   cali_config, 
-  paste0(out_path,'calibration/calibration_config.csv'),
+  paste0(out_path,'calibration/calibration_5prime_config.csv'),
+  col.names = T,
+  row.names = F,
+  sep = ','
+)
+write.table(
+  cali_config, 
+  paste0(out_path,'calibration/calibration_3prime_config.csv'),
   col.names = T,
   row.names = F,
   sep = ','

@@ -32,7 +32,7 @@ if(!dir.exists(in_path)){
 # check if bam files
 in_files <- list.files(
   path = in_path, 
-  pattern = '.bam',
+  pattern = 'rpf_[0-9]{2}_calibrated.bam',
   ignore.case = TRUE
 )
 if(length(in_files) < 1){
@@ -62,7 +62,7 @@ for(i in 1:length(in_f)) {
   # run
   system(
     paste0(
-      tool_path['samtools'],' merge ',
+      tool_path['samtools'],' merge -f ',
       out_path,in_f[i],'_calibrated.bam ',
       paste(f_merge, collapse = ' ')
     )

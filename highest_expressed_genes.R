@@ -60,11 +60,21 @@ c_all <- read.table(
 )
 
 ### filter highest expressed 
-# filter by at least 1 read per 10 nt
-c_all <- c_all[order(c_all[,7]/c_all[,9],decreasing = T),]
-c_all <- c_all[c_all[,7]/c_all[,9] > t_high, 1:6] 
+# get unique genes
+u_genes <- unique(c_all[,4])
+# if only one exon/CDS per gene
+if(length(u_genes)==nrow(c_all)){
+  c_high <- c_all[order(c_all[,7]/c_all[,9],decreasing = T),]
+  c_high <- c_high[c_high[,7]/c_high[,9] > t_high, 1:6] 
+# else (eukaryotic workflow)
+} else {
+  c_sum <- aggregate(c_all[,c(7,9)], by = list(name=c_all[,4]), sum)
+  c_sum <- c_sum[order(c_all[,2]/c_all[,3],decreasing = T),]
+  c_sum <- c_sum[c_sum[,2]/c_sum[,3] > t_high, ]
+  c_high <- c_all[is.element(c_all[,4],c_sum[,1]),1:6]
+}
 write.table(
-  c_all, 
+  c_high, 
   paste0(out_path,'highest_expressed_genes/highest_expressed_genes.bed'),
   col.names = F,
   row.names = F,
